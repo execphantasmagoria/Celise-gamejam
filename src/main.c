@@ -8,6 +8,7 @@ int main ()
 
 	// test
 	// 222
+	// can you see this kindred?
 
 	InitWindow(1280, 800, "Hello Raylib");
 
