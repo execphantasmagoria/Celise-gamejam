@@ -5,6 +5,8 @@ int main ()
 {
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
+	// test
+
 	InitWindow(1280, 800, "Hello Raylib");
 
 	SearchAndSetResourceDir("resources");
