@@ -7,6 +7,7 @@
 // -------------- Structure Definitions ----------------
 
 typedef struct Scene {
+	char* scene_name;
 	void (*Update) (void* ctx);
 	void (*Render) (void* ctx);
 	void* ctx;
@@ -18,6 +19,10 @@ typedef struct SceneStack {
 	int top;
 } SceneStack;
 
+typedef struct BaseSceneContext {
+	int dummy;
+} BaseSceneContext;
+
 typedef struct TitleScreenContext {
 	int frameCount;
 	Texture2D logo;
@@ -26,14 +31,18 @@ typedef struct TitleScreenContext {
 // ----- Global Declarations & Forward Declarations -----
 
 SceneStack* globalSceneStack;
+
 TitleScreenContext title_screen_context = { 0 };
 Scene title_scene = { 0 };
+BaseSceneContext base_scene_context = { 0 };
+Scene base_scene = { 0 };
 
 SceneStack* InitSceneStack();
 void PushScene(SceneStack* stack, Scene* scene);
 void PopScene(SceneStack* stack);
 Scene* GetCurrentScene(SceneStack* stack);
 Scene* CreateTitleScreenScene(TitleScreenContext context, Scene scene);
+Scene* CreateBaseScene(BaseSceneContext context, Scene scene);
 
 
 // --------------------- Main Loop ----------------------
@@ -49,6 +58,7 @@ int main()
 
 	printf("Scene stack initialized at address %p\n", globalSceneStack);
 
+	PushScene(globalSceneStack, CreateBaseScene(base_scene_context, base_scene));
 	PushScene(globalSceneStack, CreateTitleScreenScene(title_screen_context, title_scene));
 
 	while (!WindowShouldClose())
@@ -98,6 +108,7 @@ void PushScene(SceneStack* stack, Scene* scene)
 {
 	if (stack->scene_count < MAX_SCENES)
 	{
+		printf("Pushing scene... <%s>\n", scene->scene_name);
 		stack->scenes[++stack->top] = scene;
 		stack->scene_count++;
 	}
@@ -107,8 +118,19 @@ void PopScene(SceneStack* stack)
 {
 	if (stack->scene_count > 0)
 	{
-		Scene* scene = stack->scenes[stack->top--];
+		Scene* scene = stack->scenes[stack->top];
+		if(scene->scene_name == "base_scene")
+		{
+			printf("Base scene cannot be popped.\n");
+			return;
+		}
+		printf("\nPopping scene... <%s>\n", scene->scene_name);
+		stack->top--;
 		stack->scene_count--;
+	}
+	else
+	{
+		printf("\nScene Stack is empty. Current Scene Count: %d\n", stack->scene_count);
 	}
 }
 
@@ -118,6 +140,32 @@ Scene* GetCurrentScene(SceneStack* stack)
 	{
 		return stack->scenes[stack->top];
 	}
+}
+
+// -------------------- Base Scene ---------------------
+
+void UpdateBaseScene(void* ctx);
+void RenderBaseScene(void* ctx);
+
+Scene* CreateBaseScene(BaseSceneContext context, Scene scene)
+{
+	context.dummy = 1;
+	scene.Update = UpdateBaseScene;
+	scene.Render = RenderBaseScene;
+	scene.scene_name = "base_scene";
+	scene.ctx = &context;
+	return &scene;
+}
+
+void UpdateBaseScene(void* ctx)
+{
+	BaseSceneContext* context = (BaseSceneContext*)ctx;
+}
+
+void RenderBaseScene(void* ctx)
+{
+	ClearBackground(RAYWHITE);
+	DrawText("Null Scene", 10, 10, 20, DARKGRAY);
 }
 
 // ------------------- Title Screen Scene ------------------
@@ -133,6 +181,7 @@ Scene* CreateTitleScreenScene(TitleScreenContext context, Scene scene)
 
 	scene.Update = UpdateTitleScreen;
 	scene.Render = RenderTitleScreen;
+	scene.scene_name = "title_screen";
 	scene.ctx = &context;
 
 	return &scene;
@@ -148,7 +197,7 @@ void UpdateTitleScreen(void* ctx)
 	{
 		printf("Transitioning to the main game scene...\n");
 		printf("Stack address %p", globalSceneStack);
-		//PopScene(globalSceneStack); // Remove the title screen
+		PopScene(globalSceneStack); // Remove the title screen
 		//PushScene(stack, CreateMainMenu(mainctx, scene)); // Push the main menu scene
 	}
 	//printf("Title Screen updated. Frame count: %d\n", context->frameCount);
