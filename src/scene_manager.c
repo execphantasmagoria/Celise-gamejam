@@ -11,7 +11,7 @@ SceneStack* InitSceneStack()
 	}
 	else if (stack == NULL)
 		{
-		perr("Failed to allocate memory for SceneStack\n");)
+		printf("Failed to allocate memory for SceneStack\n");
 		return NULL;
 	}
 	return stack;
@@ -19,13 +19,26 @@ SceneStack* InitSceneStack()
 
 void PushScene(SceneStack* stack, Scene* scene)
 {
+	if(stack->scene_count < MAX_SCENES)
+	{
+		stack->scenes[++stack->top] = scene;
+		stack->scene_count++;
+	}
 }
 
 void PopScene(SceneStack* stack)
 {
+	if(stack->scene_count > 0)
+	{
+		Scene* scene = stack->scenes[stack->top--];
+		stack->scene_count--;
+	}
 }
 
 Scene* GetCurrentScene(SceneStack* stack)
 {
-	return NULL;
+	if(stack->scene_count > 0)
+	{
+		return stack->scenes[stack->top];
+	}
 }
