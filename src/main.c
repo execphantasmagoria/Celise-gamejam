@@ -6,6 +6,7 @@ int main ()
 	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
 
 	// test
+	// 222
 
 	InitWindow(1280, 800, "Hello Raylib");
 
