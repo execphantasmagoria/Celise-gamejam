@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// -------------------------------------------------------------------------------------------------------------
+// -------------- Structure Definitions ----------------
 
 typedef struct Scene {
 	void (*Update) (void* ctx);
@@ -23,9 +23,61 @@ typedef struct TitleScreenContext {
 	Texture2D logo;
 	const char* message;
 } TitleScreenContext;
-// -------------------------------------------------------------------------------------------------------------
+// ----- Global Declarations & Forward Declarations -----
 
 SceneStack* globalSceneStack;
+TitleScreenContext title_screen_context = { 0 };
+Scene title_scene = { 0 };
+
+SceneStack* InitSceneStack();
+void PushScene(SceneStack* stack, Scene* scene);
+void PopScene(SceneStack* stack);
+Scene* GetCurrentScene(SceneStack* stack);
+Scene* CreateTitleScreenScene(TitleScreenContext context, Scene scene);
+
+
+// --------------------- Main Loop ----------------------
+
+int main()
+{
+	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
+	InitWindow(1920, 1080, "Hello Raylib");
+
+	SearchAndSetResourceDir("resources");
+
+	globalSceneStack = InitSceneStack();
+
+	printf("Scene stack initialized at address %p\n", globalSceneStack);
+
+	PushScene(globalSceneStack, CreateTitleScreenScene(title_screen_context, title_scene));
+
+	while (!WindowShouldClose())
+	{
+		Scene* currentScene = GetCurrentScene(globalSceneStack);
+		if (currentScene)
+		{
+			currentScene->Update(currentScene->ctx);
+		}
+		else
+		{
+			printf("No current scene after push!\n");
+		}
+
+		BeginDrawing();
+
+		if (currentScene)
+		{
+			currentScene->Render(currentScene->ctx);
+		}
+
+		EndDrawing();
+	}
+	CloseWindow();
+
+	return 0;
+}
+
+// ---------------- Scene Management -------------------
 
 SceneStack* InitSceneStack() {
 	SceneStack* stack = (SceneStack*)malloc(sizeof(SceneStack));
@@ -68,7 +120,7 @@ Scene* GetCurrentScene(SceneStack* stack)
 	}
 }
 
-// -------------------------------------------------------------------------------------------------------------
+// ------------------- Title Screen Scene ------------------
 
 void UpdateTitleScreen(void* ctx);
 void RenderTitleScreen(void* ctx);
@@ -117,50 +169,4 @@ void RenderTitleScreen(void* ctx)
 		GetScreenWidth() / 2 - MeasureText(context->message, 20) / 2,
 		GetScreenHeight() / 2 + context->logo.height / 2 + 20, 20,
 		LIGHTGRAY);
-	//printf("Title Screen rendered.\n");
-}
-
-
-// -------------------------------------------------------------------------------------------------------------
-
-TitleScreenContext title_screen_context = { 0 };
-Scene title_scene = { 0 };
-
-int main ()
-{
-	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
-	InitWindow(1920, 1080, "Hello Raylib");
-	
-	SearchAndSetResourceDir("resources");
-
-	globalSceneStack = InitSceneStack();
-
-	printf("Scene stack initialized at address %p\n", globalSceneStack);
-
-	PushScene(globalSceneStack, CreateTitleScreenScene(title_screen_context, title_scene));
-	
-	while (!WindowShouldClose())
-	{
-		Scene* currentScene = GetCurrentScene(globalSceneStack);
-		if(currentScene)
-		{
-			currentScene->Update(currentScene->ctx);
-		}
-		else
-		{
-			printf("No current scene after push!\n");
-		}
-
-		BeginDrawing();
-
-			if (currentScene)
-			{
-				currentScene->Render(currentScene->ctx);
-			}
-		
-		EndDrawing();
-	}
-	CloseWindow();
-
-	return 0;
 }
