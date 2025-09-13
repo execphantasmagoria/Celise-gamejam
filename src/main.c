@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "resource_dir.h"
+#include "scene_manager.h"
 
 int main ()
 {
