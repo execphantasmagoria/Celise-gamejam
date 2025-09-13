@@ -406,3 +406,7 @@ Makefile
 *.swp
 *.swo
 *.swn
+
+# bin and build folders in the solution root
+/bin
+/build
