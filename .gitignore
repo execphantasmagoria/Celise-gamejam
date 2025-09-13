@@ -1,4 +1,4 @@
 .vs/
 .vscode/
-build/external/raylib-master/
-
+build/
+bin/
