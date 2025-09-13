@@ -1,4 +1,5 @@
 #include "scene_manager.h"
+#include "main_menu.h"
 #include "raylib.h"
 
 typedef struct TitleScreenContext {
@@ -7,8 +8,6 @@ typedef struct TitleScreenContext {
 	const char* message;
 } TitleScreenContext;
 
-Scene* CreateTitleScreenScene();
-
+Scene* CreateTitleScreenScene(TitleScreenContext ctx, Scene scene);
 void UpdateTitleScreen(void* ctx);
 void RenderTitleScreen(void* ctx);
-void FreeTitleScreen(void* ctx);

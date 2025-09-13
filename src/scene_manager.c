@@ -1,7 +1,6 @@
 #include "scene_manager.h"
-#include <stdlib.h>
-SceneStack* InitSceneStack()
-{
+
+SceneStack* InitSceneStack() {
 	SceneStack* stack = (SceneStack*)malloc(sizeof(SceneStack));
 	if (stack)
 	{
@@ -10,16 +9,15 @@ SceneStack* InitSceneStack()
 		return stack;
 	}
 	else if (stack == NULL)
-		{
+	{
 		printf("Failed to allocate memory for SceneStack\n");
 		return NULL;
 	}
-	return stack;
 }
 
 void PushScene(SceneStack* stack, Scene* scene)
 {
-	if(stack->scene_count < MAX_SCENES)
+	if (stack->scene_count < MAX_SCENES)
 	{
 		stack->scenes[++stack->top] = scene;
 		stack->scene_count++;
@@ -28,7 +26,7 @@ void PushScene(SceneStack* stack, Scene* scene)
 
 void PopScene(SceneStack* stack)
 {
-	if(stack->scene_count > 0)
+	if (stack->scene_count > 0)
 	{
 		Scene* scene = stack->scenes[stack->top--];
 		stack->scene_count--;
@@ -37,7 +35,7 @@ void PopScene(SceneStack* stack)
 
 Scene* GetCurrentScene(SceneStack* stack)
 {
-	if(stack->scene_count > 0)
+	if (stack->scene_count > 0)
 	{
 		return stack->scenes[stack->top];
 	}

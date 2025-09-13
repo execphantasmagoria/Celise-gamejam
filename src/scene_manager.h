@@ -2,6 +2,8 @@
 #define SCENE_MANAGER_H
 
 #define MAX_SCENES 10
+#include <stdio.h>
+#include <stdlib.h>
 
 typedef struct Scene {
 	void (*Update) (void* ctx);
@@ -15,14 +17,9 @@ typedef struct SceneStack {
 	int top;
 } SceneStack;
 
-extern SceneStack* globalSceneStack;
-
 SceneStack* InitSceneStack();
-
 void PushScene(SceneStack* stack, Scene* scene);
-
 void PopScene(SceneStack* stack);
-
 Scene* GetCurrentScene(SceneStack* stack);
 
-#endif
+#endif // SCENE_MANAGER_H
