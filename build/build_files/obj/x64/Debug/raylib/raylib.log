@@ -1,0 +1,21 @@
+﻿  raudio.c
+  rcore.c
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\minwindef.h(60,9): warning C4005: 'MAX_PATH': macro redefinition
+  (compiling source file '../external/raylib-master/src/rcore.c')
+      C:\Users\shiro\code\uni\gamejam2025rgu\Celise\build\external\raylib-master\src\rcore.c(166,17):
+      see previous definition of 'MAX_PATH'
+  
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared\minwindef.h(130,9): warning C4005: 'APIENTRY': macro redefinition
+  (compiling source file '../external/raylib-master/src/rcore.c')
+      C:\Users\shiro\code\uni\gamejam2025rgu\Celise\build\external\raylib-master\src\external\glfw\include\GLFW\glfw3.h(123,11):
+      see previous definition of 'APIENTRY'
+  
+  rglfw.c
+  rmodels.c
+  rshapes.c
+  rtext.c
+C:\Users\shiro\code\uni\gamejam2025rgu\Celise\build\external\raylib-master\src\rtext.c(1455,20): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  rtextures.c
+  utils.c
+  Generating Code...
+  raylib.vcxproj -> C:\Users\shiro\code\uni\gamejam2025rgu\Celise\bin\Debug\raylib.lib
