@@ -49,11 +49,32 @@ typedef struct MainMenuContext {
 typedef struct CeliseCastleContext
 {
 	int frameCount;
+	bool sceneRendered;
 	Texture2D bg1;
 	Texture2D bg2;
 	Texture2D bg3;
-	Texture2D ui_bg;
 } CeliseCastleContext;
+
+typedef struct TopBarContext {
+	int frameCount;
+	Texture2D bg;
+	Texture2D portrait_frame;
+	Texture2D portrait;
+	char* character_name;
+	Texture2D hp_bar;
+	Texture2D hp_fill;
+	float hp_percentage;
+	Texture2D interact_icon;
+	Texture2D inventory_icon;
+	Texture2D journal_icon;
+	Texture2D daylight_icon;
+	Texture2D map_icon;
+	Texture2D menu_icon;
+	Texture2D gold_icon;
+	char* datetime;
+	int gold;
+
+} TopBarContext;
 
 // ----- Global Declarations & Forward Declarations -----
 
@@ -67,6 +88,8 @@ MainMenuContext main_menu_context = { 0 };
 Scene main_menu_scene = { 0 };
 CeliseCastleContext celise_castle_context = { 0 };
 Scene prologue_scene = { 0 };
+TopBarContext top_bar_context = { 0 };
+Scene top_bar_scene = { 0 };
 
 SceneStack* InitSceneStack();
 void PushScene(SceneStack* stack, Scene* scene);
@@ -76,6 +99,7 @@ Scene* CreateTitleScreenScene(TitleScreenContext* context, Scene* scene);
 Scene* CreateBaseScene(BaseSceneContext* context, Scene* scene);
 Scene* CreateMainMenuScene(MainMenuContext* context, Scene* scene);
 Scene* CreateCastleScene(CeliseCastleContext* context, Scene* scene);
+Scene* CreateTopBar(TopBarContext* context, Scene* scene);
 
 // --------------------- Logger ----------------------
 
@@ -116,6 +140,7 @@ int main()
 
 	PushScene(globalSceneStack, CreateBaseScene(&base_scene_context, &base_scene));
 	PushScene(globalSceneStack, CreateTitleScreenScene(&title_screen_context, &title_scene));
+	Scene* topbar = CreateTopBar(&top_bar_context, &top_bar_scene);
 
 	while (!WindowShouldClose())
 	{
@@ -123,6 +148,7 @@ int main()
 		if (currentScene)
 		{
 			currentScene->Update(currentScene->ctx);
+			topbar->Update(topbar->ctx);
 		}
 		else
 		{
@@ -134,10 +160,12 @@ int main()
 		if (currentScene)
 		{
 			currentScene->Render(currentScene->ctx);
+			topbar->Render(topbar->ctx);
 		}
 
 		EndDrawing();
 	}
+	topbar->Free(topbar->ctx);
 	CloseWindow();
 	return 0;
 }
@@ -157,6 +185,7 @@ SceneStack* InitSceneStack() {
 		printf("[DEBUG ERROR] Failed to allocate memory for SceneStack\n");
 		return NULL;
 	}
+	return NULL;
 }
 
 void PushScene(SceneStack* stack, Scene* scene)
@@ -419,7 +448,7 @@ Scene* CreateCastleScene(CeliseCastleContext* context, Scene* scene)
 	context->bg1 = LoadTexture("wall.png");
 	context->bg2 = LoadTexture("floor.png");
 	context->bg3 = LoadTexture("carpet_red.png");
-	context->ui_bg = LoadTexture("hud.png");
+	context->sceneRendered = false;
 	
 	scene->ctx = context;
 	scene->Update = UpdateCastleScene;
@@ -431,93 +460,80 @@ Scene* CreateCastleScene(CeliseCastleContext* context, Scene* scene)
 void UpdateCastleScene(void* ctx)
 {
 	CeliseCastleContext* context = (CeliseCastleContext*) ctx;
+
+	//if(context->sceneRendered)
+	//{
+	//	// For demonstration, pop the scene after rendering once
+	//	//PopScene(globalSceneStack);
+	//	//PushScene(globalSceneStack, CreateTopBar(&top_bar_context, &top_bar_scene));
+	//}
 }
 
 void RenderCastleScene(void* ctx)
 {
 	CeliseCastleContext* context = (CeliseCastleContext*)ctx;
 
+	//if(context->sceneRendered)
+	//{
+	//	return; // Skip rendering if already rendered
+	//}
+
 	ClearBackground(BLACK);
 
-	// bg1
-	Rectangle srcbg1 = {
-		0,
-		0,
-		context->bg1.width * 3,
-		context->bg1.height
-
-	};
-
-	Rectangle destbg1 = {
-		0,
-		GetScreenHeight() / 2 - context->bg1.height / 2 - 70,
-		context->bg1.width * 3,
-		context->bg1.height
-
-	};
-
-	// bg2
-	Rectangle srcbg2 = {
-		0,
-		0,
-		context->bg2.width * 14,
-		context->bg2.height * 3
-	};
-
-	Rectangle destbg2 = {
-		0,
-		GetScreenHeight()/2 + context->bg1.height/2 - 70,
-		context->bg2.width *  14,
-		context->bg2.height * 5
-
-	};
-
-	// bg3
-	Rectangle srcbg3 = {
-		0,
-		0,
-		context->bg3.width * 14,
-		context->bg3.height
-	};
-	Rectangle destbg3 = {
-		0,
-		GetScreenHeight() / 2 + context->bg1.height / 2 + context->bg3.height/4 -70,
-		context->bg2.width * 14,
-		context->bg3.height + 70
-	};
-
-	Vector2 origin = {
-		0,
-		0
-	};
+	Vector2 origin = { 0, 0 };
 
 	DrawTexturePro(context->bg1,
-		srcbg1,
-		destbg1,
+		(Rectangle) {
+			0,
+			0,
+			context->bg1.width * 3,
+			context->bg1.height
+		},
+		(Rectangle) {
+			0,
+			GetScreenHeight() / 2 - context->bg1.height / 2 - 70,
+			context->bg1.width * 3,
+			context->bg1.height
+		},
 		origin,
 		0.0f,
 		WHITE);
 
 	DrawTexturePro(context->bg2,
-		srcbg2,
-		destbg2,
+		(Rectangle) {
+			0,
+			0,
+			context->bg2.width * 14,
+			context->bg2.height * 3
+		},
+		(Rectangle){
+			0,
+			GetScreenHeight() / 2 + context->bg1.height / 2 - 70,
+			context->bg2.width * 14,
+			context->bg2.height * 5
+		},
 		origin,
 		0.0f,
 		WHITE);
 
 	DrawTexturePro(context->bg3,
-		srcbg3,
-		destbg3,
+		(Rectangle) {
+			0,
+			0,
+			context->bg3.width * 14,
+			context->bg3.height
+		},
+		(Rectangle) {
+			0,
+			GetScreenHeight() / 2 + context->bg1.height / 2 + context->bg3.height / 4 - 70,
+			context->bg2.width * 14,
+			context->bg3.height + 70
+		},
 		origin,
 		0.0f,
 		WHITE);
 
-	DrawTexturePro(context->ui_bg,
-		(Rectangle){ 0, 0, (float)context->ui_bg.width * 14, (float)context->ui_bg.height },
-		(Rectangle){ 0, 0, (float)context->ui_bg.width * 14, (float)context->ui_bg.height },
-		(Vector2){ 0, 0 },
-		0.0f,
-		WHITE);
+	context->sceneRendered = true;
 
 }
 
@@ -528,5 +544,70 @@ void UnloadCastleScene(void* ctx)
 	UnloadTexture(context->bg1);
 	UnloadTexture(context->bg2);
 	UnloadTexture(context->bg3);
-	UnloadTexture(context->ui_bg);
+}
+
+// ------------------------- Top Bar ----------------------------
+
+void UpdateTopBar(void* ctx);
+void RenderTopBar(void* ctx);
+void UnloadTopBar(void* ctx);
+
+Scene* CreateTopBar(TopBarContext* context, Scene* scene)
+{
+	context->bg = LoadTexture("hud.png");
+	context->portrait_frame = LoadTexture("portrait_frame.png");
+	context->portrait = LoadTexture("portrait.png");
+
+	scene->Update = UpdateTopBar;
+	scene->Render = RenderTopBar;
+	scene->Free = UnloadTopBar;
+	scene->scene_name = "top_bar";
+	scene->ctx = context;
+	return scene;
+}
+
+void UpdateTopBar(void* ctx)
+{
+	TopBarContext* context = (TopBarContext*)ctx;
+}
+
+void RenderTopBar(void* ctx)
+{
+	Scene* current_scene = GetCurrentScene(globalSceneStack);
+	if(current_scene->scene_name == "title_screen" || current_scene->scene_name == "main_menu")
+	{
+		return; // Skip rendering top bar in title screen and main menu
+	}
+
+	TopBarContext* context = (TopBarContext*)ctx;
+
+	DrawTexturePro(context->bg,
+		(Rectangle) {0, 0, (float)context->bg.width * 14, (float)context->bg.height},
+		(Rectangle) {0, 0, (float)context->bg.width * 14, (float)context->bg.height},
+		(Vector2) {0, 0},
+		0.0f,
+		WHITE);
+
+	DrawTexturePro(context->portrait,
+		(Rectangle) {0, 0, (float)context->portrait.width, (float)context->portrait.height},
+		(Rectangle) {0, 0, (float)context->portrait.width, (float)context->portrait.height},
+		(Vector2) {0, 0},
+		0.0f,
+		WHITE);
+
+	DrawTexturePro(context->portrait_frame,
+		(Rectangle) {
+		0, 0, (float)context->portrait_frame.width, (float)context->portrait_frame.height},
+		(Rectangle) {
+		0, 0, (float)context->portrait_frame.width, (float)context->portrait_frame.height},
+		(Vector2) {0, 0},
+		0.0f,
+		WHITE);
+}
+
+void UnloadTopBar(void* ctx)
+{
+	TopBarContext* context = (TopBarContext*)ctx;
+
+	UnloadTexture(context->bg);
 }
