@@ -28,6 +28,7 @@ typedef struct BaseSceneContext {
 typedef struct TitleScreenContext {
 	int frameCount;
 	Texture2D logo;
+	Texture2D bg;
 	const char* message;
 	Font scene_font;
 } TitleScreenContext;
@@ -35,13 +36,25 @@ typedef struct TitleScreenContext {
 typedef struct MainMenuContext {
 	int frameCount;
 	bool logoSettled;
+	bool buttonSelected;
 	float logoY;
 	float targetLogoY;
 	Texture2D logo;
+	Texture2D bg;
 	Texture2D newGameButton;
 	Texture2D newGameButtonHover;
 
 } MainMenuContext;
+
+typedef struct CeliseCastleContext
+{
+	int frameCount;
+	Texture2D bg1;
+	Texture2D bg2;
+	Texture2D bg3;
+	Texture2D ui_bg;
+} CeliseCastleContext;
+
 // ----- Global Declarations & Forward Declarations -----
 
 SceneStack* globalSceneStack;
@@ -52,6 +65,8 @@ BaseSceneContext base_scene_context = { 0 };
 Scene base_scene = { 0 };
 MainMenuContext main_menu_context = { 0 };
 Scene main_menu_scene = { 0 };
+CeliseCastleContext celise_castle_context = { 0 };
+Scene prologue_scene = { 0 };
 
 SceneStack* InitSceneStack();
 void PushScene(SceneStack* stack, Scene* scene);
@@ -60,6 +75,7 @@ Scene* GetCurrentScene(SceneStack* stack);
 Scene* CreateTitleScreenScene(TitleScreenContext* context, Scene* scene);
 Scene* CreateBaseScene(BaseSceneContext* context, Scene* scene);
 Scene* CreateMainMenuScene(MainMenuContext* context, Scene* scene);
+Scene* CreateCastleScene(CeliseCastleContext* context, Scene* scene);
 
 // --------------------- Logger ----------------------
 
@@ -233,7 +249,8 @@ void UnloadTitleScreen(void* ctx);
 Scene* CreateTitleScreenScene(TitleScreenContext* context, Scene* scene)
 {
 	context->frameCount = 0;
-	context->logo = LoadTexture("logo.jpg");
+	context->logo = LoadTexture("logo.png");
+	context->bg = LoadTexture("background.png");
 	context->message = "> Press ENTER or any key to start <";
 	context->scene_font = LoadFont("DalelandsUncial-BOpn.ttf");
 
@@ -265,6 +282,14 @@ void RenderTitleScreen(void* ctx)
 
 	ClearBackground(BLACK);
 
+
+	DrawTexturePro(context->bg,
+		(Rectangle){ 0, 0, (float)context->bg.width, (float)context->bg.height },
+		(Rectangle){ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() },
+		(Vector2){ 0, 0 },
+		0.0f,
+		WHITE);
+
 	DrawTexture(context->logo,
 		GetScreenWidth() / 2 - context->logo.width / 2,
 		GetScreenHeight() / 2 - context->logo.height / 2 - 50,
@@ -290,6 +315,7 @@ void UnloadTitleScreen(void* ctx)
 	TitleScreenContext* context = (TitleScreenContext*)ctx;
 
 	UnloadTexture(context->logo);
+	UnloadTexture(context->bg);
 }
 
 // -------------------- Main Menu --------------------------
@@ -301,10 +327,12 @@ void UnloadMainMenu(void* ctx);
 Scene* CreateMainMenuScene(MainMenuContext* context, Scene* scene)
 {
 	context->frameCount = 0;
-	context->logo = LoadTexture("logo.jpg");
+	context->logo = LoadTexture("logo.png");
+	context->bg = LoadTexture("background.png");
 	context->logoY = GetScreenHeight()/2.0f; // Start off-screen
 	context->targetLogoY = GetScreenHeight() / 4.0f; // Target position
 	context->logoSettled = false;
+	context->buttonSelected = false;
 	context->newGameButton = LoadTexture("ui/my/ng.png");
 	context->newGameButtonHover = LoadTexture("ui/my/ng_hover.png");
 
@@ -340,6 +368,13 @@ void RenderMainMenu(void* ctx)
 		}
 	}
 
+	DrawTexturePro(context->bg,
+		(Rectangle){ 0, 0, (float)context->bg.width, (float)context->bg.height },
+		(Rectangle){ 0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() },
+		(Vector2){ 0, 0 },
+		0.0f,
+		WHITE);
+
 	DrawTexture(context->logo,
 		GetScreenWidth() / 2 - context->logo.width / 2,
 		(int)context->logoY - context->logo.height / 2,
@@ -352,11 +387,12 @@ void RenderMainMenu(void* ctx)
 	// New Game Button
 
 	Rectangle newGameRect = { GetScreenWidth() / 2 - buttonWidth/2, startY, buttonWidth, buttonHeight };
-	if (CheckCollisionPointRec(GetMousePosition(), newGameRect)) {
+	if ( (CheckCollisionPointRec(GetMousePosition(), newGameRect)) || (IsKeyPressed(KEY_DOWN)) || context->buttonSelected) {
+		context->buttonSelected = true;
 		DrawTexture(context->newGameButtonHover, newGameRect.x, newGameRect.y, WHITE);
-		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-			printf("New Game Clicked!\n");
-			// Transition to new game scene here
+		if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsKeyPressed(KEY_ENTER)) {
+			PopScene(globalSceneStack);
+			PushScene(globalSceneStack, CreateCastleScene(&celise_castle_context, &prologue_scene));
 		}
 	} else {
 		DrawTexture(context->newGameButton, newGameRect.x, newGameRect.y, WHITE);
@@ -368,4 +404,129 @@ void UnloadMainMenu(void* ctx)
 {
 	MainMenuContext* context = (MainMenuContext*)ctx;
 	UnloadTexture(context->logo);
+	UnloadTexture(context->bg);
+}
+
+// ----- Prologue Scene
+
+void UpdateCastleScene(void* ctx);
+void RenderCastleScene(void* ctx);
+void UnloadCastleScene(void* ctx);
+
+Scene* CreateCastleScene(CeliseCastleContext* context, Scene* scene)
+{
+	context->frameCount = 0;
+	context->bg1 = LoadTexture("wall.png");
+	context->bg2 = LoadTexture("floor.png");
+	context->bg3 = LoadTexture("carpet_red.png");
+	context->ui_bg = LoadTexture("hud.png");
+	
+	scene->ctx = context;
+	scene->Update = UpdateCastleScene;
+	scene->Render = RenderCastleScene;
+	scene->Free = UnloadCastleScene;
+	scene->scene_name = "celise_castle_prologue";
+}
+
+void UpdateCastleScene(void* ctx)
+{
+	CeliseCastleContext* context = (CeliseCastleContext*) ctx;
+}
+
+void RenderCastleScene(void* ctx)
+{
+	CeliseCastleContext* context = (CeliseCastleContext*)ctx;
+
+	ClearBackground(BLACK);
+
+	// bg1
+	Rectangle srcbg1 = {
+		0,
+		0,
+		context->bg1.width * 3,
+		context->bg1.height
+
+	};
+
+	Rectangle destbg1 = {
+		0,
+		GetScreenHeight() / 2 - context->bg1.height / 2 - 70,
+		context->bg1.width * 3,
+		context->bg1.height
+
+	};
+
+	// bg2
+	Rectangle srcbg2 = {
+		0,
+		0,
+		context->bg2.width * 14,
+		context->bg2.height * 3
+	};
+
+	Rectangle destbg2 = {
+		0,
+		GetScreenHeight()/2 + context->bg1.height/2 - 70,
+		context->bg2.width *  14,
+		context->bg2.height * 5
+
+	};
+
+	// bg3
+	Rectangle srcbg3 = {
+		0,
+		0,
+		context->bg3.width * 14,
+		context->bg3.height
+	};
+	Rectangle destbg3 = {
+		0,
+		GetScreenHeight() / 2 + context->bg1.height / 2 + context->bg3.height/4 -70,
+		context->bg2.width * 14,
+		context->bg3.height + 70
+	};
+
+	Vector2 origin = {
+		0,
+		0
+	};
+
+	DrawTexturePro(context->bg1,
+		srcbg1,
+		destbg1,
+		origin,
+		0.0f,
+		WHITE);
+
+	DrawTexturePro(context->bg2,
+		srcbg2,
+		destbg2,
+		origin,
+		0.0f,
+		WHITE);
+
+	DrawTexturePro(context->bg3,
+		srcbg3,
+		destbg3,
+		origin,
+		0.0f,
+		WHITE);
+
+	DrawTexturePro(context->ui_bg,
+		(Rectangle){ 0, 0, (float)context->ui_bg.width * 14, (float)context->ui_bg.height },
+		(Rectangle){ 0, 0, (float)context->ui_bg.width * 14, (float)context->ui_bg.height },
+		(Vector2){ 0, 0 },
+		0.0f,
+		WHITE);
+
+}
+
+void UnloadCastleScene(void* ctx)
+{
+	CeliseCastleContext* context = (CeliseCastleContext*)ctx;
+
+	UnloadTexture(context->bg1);
+	UnloadTexture(context->bg2);
+	UnloadTexture(context->bg3);
+	UnloadTexture(context->ui_bg);
 }
