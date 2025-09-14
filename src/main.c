@@ -302,8 +302,8 @@ void RenderMainMenu(void* ctx)
 	ClearBackground(BLACK);
 
 	DrawTexture(context->background,
-		GetScreenWidth() / 2 - context->logo.width / 2,
-		GetScreenHeight() / 2 - context->logo.height / 2 - 50,
+		0,
+		0,
 		WHITE);
 
 }
