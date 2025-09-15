@@ -3,8 +3,8 @@
 #define MAX_SCENES 10
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
-
+#include <time.h> 
+#include <math.h>
 // -------------- Structure Definitions ----------------
 
 typedef struct Scene {
@@ -287,6 +287,7 @@ void PushScene(SceneStack* stack, Scene* scene)
 {
 	if (stack->scene_count < MAX_SCENES)
 	{
+		printf("\nPushing scene ...%d ; %d\n", stack->top, stack->scene_count);
 		stack->top++;
 		stack->scenes[stack->top] = scene;
 		stack->scene_count++;
@@ -440,6 +441,7 @@ void UnloadTitleScreen(void* ctx)
 
 	UnloadTexture(context->logo);
 	UnloadTexture(context->bg);
+	UnloadFont(context->scene_font);
 }
 
 // -------------------- Main Menu --------------------------
@@ -457,8 +459,8 @@ Scene* CreateMainMenuScene(MainMenuContext* context, Scene* scene)
 	context->targetLogoY = GetScreenHeight() / 4.0f; // Target position
 	context->logoSettled = false;
 	context->buttonSelected = false;
-	context->newGameButton = LoadTexture("ui/my/ng.png");
-	context->newGameButtonHover = LoadTexture("ui/my/ng_hover.png");
+	context->newGameButton = LoadTexture("ng.png");
+	context->newGameButtonHover = LoadTexture("ng_hover.png");
 
 	scene->Update = UpdateMainMenu;
 	scene->Render = RenderMainMenu;
@@ -529,6 +531,8 @@ void UnloadMainMenu(void* ctx)
 	MainMenuContext* context = (MainMenuContext*)ctx;
 	UnloadTexture(context->logo);
 	UnloadTexture(context->bg);
+	UnloadTexture(context->newGameButton);
+	UnloadTexture(context->newGameButtonHover);
 }
 
 // ----- Prologue Scene
@@ -649,6 +653,7 @@ void UnloadTopBar(void* ctx);
 
 Scene* CreateTopBar(TopBarContext* context, Scene* scene)
 {
+	context->frameCount = 0;
 	context->bg = LoadTexture("hud.png");
 	context->portrait_frame = LoadTexture("portrait_frame.png");
 	context->portrait = LoadTexture("portrait.png");
