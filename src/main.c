@@ -60,6 +60,7 @@ typedef struct TopBarContext {
 	Texture2D bg;
 	Texture2D portrait_frame;
 	Texture2D portrait;
+	Texture2D ui_frame;
 	char* character_name;
 	Texture2D hp_bar;
 	Texture2D hp_fill;
@@ -75,6 +76,18 @@ typedef struct TopBarContext {
 	int gold;
 
 } TopBarContext;
+
+typedef struct Player {
+	Texture2D spriteSheet;
+	int frameWidth;
+	int frameHeight;
+	int frameCount;
+	int currentFrame;
+	float frameTime;
+	float timer;
+	int direction; // 1 for left, -1 for right
+	Vector2 position;
+} Player;
 
 // ----- Global Declarations & Forward Declarations -----
 
@@ -100,6 +113,9 @@ Scene* CreateBaseScene(BaseSceneContext* context, Scene* scene);
 Scene* CreateMainMenuScene(MainMenuContext* context, Scene* scene);
 Scene* CreateCastleScene(CeliseCastleContext* context, Scene* scene);
 Scene* CreateTopBar(TopBarContext* context, Scene* scene);
+Player CreatePlayer(const char* spritePath, int frameWidth, int frameHeight, int frameCount, Vector2 startPos);
+void UpdatePlayerAnimation(Player* player);
+void DrawPlayer(Player* player);
 
 // --------------------- Logger ----------------------
 
@@ -141,7 +157,7 @@ int main()
 	PushScene(globalSceneStack, CreateBaseScene(&base_scene_context, &base_scene));
 	PushScene(globalSceneStack, CreateTitleScreenScene(&title_screen_context, &title_scene));
 	Scene* topbar = CreateTopBar(&top_bar_context, &top_bar_scene);
-
+	Player player = CreatePlayer("character/walking_sprite_sheet.png", 180, 270, 6, (Vector2) { 100, 300 });
 	while (!WindowShouldClose())
 	{
 		Scene* currentScene = GetCurrentScene(globalSceneStack);
@@ -149,6 +165,7 @@ int main()
 		{
 			currentScene->Update(currentScene->ctx);
 			topbar->Update(topbar->ctx);
+			UpdatePlayerAnimation(&player);
 		}
 		else
 		{
@@ -161,6 +178,7 @@ int main()
 		{
 			currentScene->Render(currentScene->ctx);
 			topbar->Render(topbar->ctx);
+			DrawPlayer(&player);
 		}
 
 		EndDrawing();
@@ -170,6 +188,66 @@ int main()
 	return 0;
 }
 
+// -----------------------Player -----------------------
+
+Player CreatePlayer(const char* spritePath, int frameWidth, int frameHeight, int frameCount, Vector2 startPos)
+{
+	Player player = { 0 };
+	player.spriteSheet = LoadTexture(spritePath);
+	player.frameWidth = frameWidth;
+	player.frameHeight = frameHeight;
+	player.frameCount = frameCount;
+	player.currentFrame = 0;
+	player.frameTime = 0.1f; // Time per frame
+	player.timer = 0.0f;
+	player.position = startPos;
+	player.direction = -1; // Initially facing right
+	return player;
+}
+
+void UpdatePlayerAnimation(Player* player)
+{
+	bool moving = false;
+
+	if (IsKeyDown(KEY_RIGHT))
+	{
+		player->position.x += 2.0f;
+		moving = true;
+		player->direction = -1; // Facing right
+	}
+	if (IsKeyDown(KEY_LEFT))
+	{
+		player->position.x -= 2.0f;
+		moving = true;
+		player->direction = 1; // Facing left
+	}
+
+	if (!moving)
+	{
+		player->currentFrame = 0; // Reset to first frame when not moving
+		return;
+	}
+
+	player->timer += GetFrameTime();
+	if (player->timer >= player->frameTime)
+	{
+		player->currentFrame = (player->currentFrame + 1) % player->frameCount;
+		player->timer = 0.0f;
+	}
+}
+
+void DrawPlayer(Player* player)
+{
+	Scene* current_scene = GetCurrentScene(globalSceneStack);
+	if (current_scene->scene_name == "title_screen" || current_scene->scene_name == "main_menu")
+	{
+		return; // Skip rendering player in title screen and main menu
+	}
+	Rectangle sourceRec = { player->currentFrame * player->frameWidth, 0, (float)player->frameWidth * player->direction, (float)player->frameHeight };
+	Rectangle destRec = { player->position.x, player->position.y, (float)player->frameWidth, (float)player->frameHeight };
+	Vector2 origin = { 0, 0 };
+	DrawTexturePro(player->spriteSheet, sourceRec, destRec, origin, 0.0f, WHITE);
+}
 // ---------------- Scene Management -------------------
 
 SceneStack* InitSceneStack() {
@@ -557,6 +635,7 @@ Scene* CreateTopBar(TopBarContext* context, Scene* scene)
 	context->bg = LoadTexture("hud.png");
 	context->portrait_frame = LoadTexture("portrait_frame.png");
 	context->portrait = LoadTexture("portrait.png");
+	context->ui_frame = LoadTexture("ui_frame.png");
 
 	scene->Update = UpdateTopBar;
 	scene->Render = RenderTopBar;
@@ -603,6 +682,25 @@ void RenderTopBar(void* ctx)
 		(Vector2) {0, 0},
 		0.0f,
 		WHITE);
+
+	DrawTexturePro(context->ui_frame,
+		(Rectangle) {0, 0, (float)context->ui_frame.width, (float)context->ui_frame.height},
+		(Rectangle) {0, 0, (float)context->ui_frame.width, (float)context->ui_frame.height},
+		(Vector2) {0, 0},
+		0.0f,
+		WHITE);
+
+	DrawTexturePro(context->ui_frame,
+		(Rectangle) { 0, 0, (float)context->ui_frame.width, (float)context->ui_frame.height
+	},
+		(Rectangle) {
+		(float)context->ui_frame.width + 10, 0, (float)context->ui_frame.width + 100, (float)context->ui_frame.height
+	},
+		(Vector2) {
+		0, 0
+	},
+		0.0f,
+		WHITE);
 }
 
 void UnloadTopBar(void* ctx)
@@ -610,4 +708,7 @@ void UnloadTopBar(void* ctx)
 	TopBarContext* context = (TopBarContext*)ctx;
 
 	UnloadTexture(context->bg);
+	UnloadTexture(context->portrait_frame);
+	UnloadTexture(context->portrait);
+	UnloadTexture(context->ui_frame);
 }
