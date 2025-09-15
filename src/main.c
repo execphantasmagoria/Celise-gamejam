@@ -157,7 +157,7 @@ int main()
 	PushScene(globalSceneStack, CreateBaseScene(&base_scene_context, &base_scene));
 	PushScene(globalSceneStack, CreateTitleScreenScene(&title_screen_context, &title_scene));
 	Scene* topbar = CreateTopBar(&top_bar_context, &top_bar_scene);
-	Player player = CreatePlayer("character/walking_sprite_sheet.png", 180, 270, 6, (Vector2) { 100, 300 });
+	Player player = CreatePlayer("character/walking_sprite_sheet.png", 180, 220, 6, (Vector2) { 100, 350 });
 	while (!WindowShouldClose())
 	{
 		Scene* currentScene = GetCurrentScene(globalSceneStack);
@@ -211,20 +211,37 @@ void UpdatePlayerAnimation(Player* player)
 
 	if (IsKeyDown(KEY_RIGHT))
 	{
-		player->position.x += 2.0f;
+		// Prevent moving off right edge
+		if (player->position.x < GetScreenWidth() - player->frameWidth)
+		{
+			player->position.x += 4.0f;
+		}
+		else
+		{
+			player->position.x = GetScreenWidth() - player->frameWidth;
+		}
 		moving = true;
 		player->direction = -1; // Facing right
 	}
 	if (IsKeyDown(KEY_LEFT))
 	{
-		player->position.x -= 2.0f;
+		// Prevent moving off left edge
+		if (player->position.x > 0)
+		{
+			player->position.x -= 4.0f;
+		}
+		else
+		{
+			player->position.x = 0;
+		}
+		player->position.x -= 4.0f;
 		moving = true;
 		player->direction = 1; // Facing left
 	}
 
 	if (!moving)
 	{
-		player->currentFrame = 0; // Reset to first frame when not moving
+		player->currentFrame = 1; // Reset to first frame when not moving
 		return;
 	}
 
@@ -243,7 +260,7 @@ void DrawPlayer(Player* player)
 	{
 		return; // Skip rendering player in title screen and main menu
 	}
-	Rectangle sourceRec = { (player->currentFrame )* player->frameWidth, 0, (float)player->frameWidth * player->direction, (float)player->frameHeight };
+	Rectangle sourceRec = { player->currentFrame * player->frameWidth, 0, (float)player->frameWidth * player->direction, (float)player->frameHeight };
 	Rectangle destRec = { player->position.x, player->position.y, (float)player->frameWidth, (float)player->frameHeight };
 	Vector2 origin = { 0, 0 };
 	DrawTexturePro(player->spriteSheet, sourceRec, destRec, origin, 0.0f, WHITE);
