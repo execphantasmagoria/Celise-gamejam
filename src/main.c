@@ -243,7 +243,7 @@ void DrawPlayer(Player* player)
 	{
 		return; // Skip rendering player in title screen and main menu
 	}
-	Rectangle sourceRec = { player->currentFrame * player->frameWidth, 0, (float)player->frameWidth * player->direction, (float)player->frameHeight };
+	Rectangle sourceRec = { (player->currentFrame )* player->frameWidth, 0, (float)player->frameWidth * player->direction, (float)player->frameHeight };
 	Rectangle destRec = { player->position.x, player->position.y, (float)player->frameWidth, (float)player->frameHeight };
 	Vector2 origin = { 0, 0 };
 	DrawTexturePro(player->spriteSheet, sourceRec, destRec, origin, 0.0f, WHITE);
