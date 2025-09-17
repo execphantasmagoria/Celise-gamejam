@@ -9,6 +9,7 @@
 
 typedef struct Scene {
 	char* scene_name;
+
 	void (*Update) (void* ctx);
 	void (*Render) (void* ctx);
 	void (*Free) (void* ctx);
