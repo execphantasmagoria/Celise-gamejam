@@ -27,7 +27,7 @@ typedef struct BaseSceneContext {
 } BaseSceneContext;
 
 typedef struct TitleScreenContext {
-	int frameCount;
+	int wFrameCount;
 	Texture2D logo;
 	Texture2D bg;
 	const char* message;
@@ -35,7 +35,7 @@ typedef struct TitleScreenContext {
 } TitleScreenContext;
 
 typedef struct MainMenuContext {
-	int frameCount;
+	int wFrameCount;
 	bool logoSettled;
 	bool buttonSelected;
 	float logoY;
@@ -49,7 +49,7 @@ typedef struct MainMenuContext {
 
 typedef struct CeliseCastleContext
 {
-	int frameCount;
+	int wFrameCount;
 	bool sceneRendered;
 	Texture2D bg1;
 	Texture2D bg2;
@@ -57,7 +57,7 @@ typedef struct CeliseCastleContext
 } CeliseCastleContext;
 
 typedef struct TopBarContext {
-	int frameCount;
+	int wFrameCount;
 	Texture2D bg;
 	Texture2D portrait_frame;
 	Texture2D portrait;
@@ -79,13 +79,17 @@ typedef struct TopBarContext {
 } TopBarContext;
 
 typedef struct Player {
-	Texture2D spriteSheet;
+	Texture2D walkingSpriteSheet;
+	Texture2D runningSpriteSheet;
 	int frameWidth;
-	int frameHeight;
-	int frameCount;
+	int wFrameHeight;
+	int wFrameCount;
+	int rFrameHeight;
+	int rFrameCount;
 	int currentFrame;
 	float frameTime;
 	float timer;
+	bool isRunning;
 	int direction; // 1 for left, -1 for right
 	Vector2 position;
 } Player;
@@ -114,9 +118,10 @@ Scene* CreateBaseScene(BaseSceneContext* context, Scene* scene);
 Scene* CreateMainMenuScene(MainMenuContext* context, Scene* scene);
 Scene* CreateCastleScene(CeliseCastleContext* context, Scene* scene);
 Scene* CreateTopBar(TopBarContext* context, Scene* scene);
-Player CreatePlayer(const char* spritePath, int frameWidth, int frameHeight, int frameCount, Vector2 startPos);
+Player CreatePlayer(const char* walkingSpritePath, const char* runningSpritePath, int frameWidth, int wFrameHeight, int wFrameCount, Vector2 startPos);
 void UpdatePlayerAnimation(Player* player);
 void DrawPlayer(Player* player);
+void FreePlayer(Player* player);
 
 // --------------------- Logger ----------------------
 
@@ -158,7 +163,7 @@ int main()
 	PushScene(globalSceneStack, CreateBaseScene(&base_scene_context, &base_scene));
 	PushScene(globalSceneStack, CreateTitleScreenScene(&title_screen_context, &title_scene));
 	Scene* topbar = CreateTopBar(&top_bar_context, &top_bar_scene);
-	Player player = CreatePlayer("character/walking_sprite_sheet.png", 180, 220, 6, (Vector2) { 100, 350 });
+	Player player = CreatePlayer("character/walking_sprite_sheet.png", "character/running_sprite_sheet.png", 180, 220, 6, (Vector2) { 100, 350 });
 	while (!WindowShouldClose())
 	{
 		Scene* currentScene = GetCurrentScene(globalSceneStack);
@@ -185,22 +190,27 @@ int main()
 		EndDrawing();
 	}
 	topbar->Free(topbar->ctx);
+	FreePlayer(&player);
 	CloseWindow();
 	return 0;
 }
 
 // -----------------------Player -----------------------
 
-Player CreatePlayer(const char* spritePath, int frameWidth, int frameHeight, int frameCount, Vector2 startPos)
+Player CreatePlayer(const char* walkingSpritePath, const char* runningSpritePath, int frameWidth, int wFrameHeight, int wFrameCount, Vector2 startPos)
 {
 	Player player = { 0 };
-	player.spriteSheet = LoadTexture(spritePath);
+	player.walkingSpriteSheet = LoadTexture(walkingSpritePath);
+	player.runningSpriteSheet = LoadTexture(runningSpritePath);
 	player.frameWidth = frameWidth;
-	player.frameHeight = frameHeight;
-	player.frameCount = frameCount;
+	player.wFrameHeight = wFrameHeight;
+	player.wFrameCount = wFrameCount;
+	player.rFrameCount = 4;
+	player.rFrameHeight = 220;
 	player.currentFrame = 0;
 	player.frameTime = 0.1f; // Time per frame
 	player.timer = 0.0f;
+	player.isRunning = false;
 	player.position = startPos;
 	player.direction = -1; // Initially facing right
 	return player;
@@ -209,6 +219,7 @@ Player CreatePlayer(const char* spritePath, int frameWidth, int frameHeight, int
 void UpdatePlayerAnimation(Player* player)
 {
 	bool moving = false;
+	player->isRunning = false;
 
 	if (IsKeyDown(KEY_RIGHT))
 	{
@@ -235,9 +246,14 @@ void UpdatePlayerAnimation(Player* player)
 		{
 			player->position.x = 0;
 		}
-		player->position.x -= 4.0f;
 		moving = true;
 		player->direction = 1; // Facing left
+	}
+
+	if (moving && IsKeyDown(KEY_LEFT_SHIFT))
+	{
+		player->isRunning = true;
+		player->position.x += -7.0f * player->direction;
 	}
 
 	if (!moving)
@@ -249,7 +265,7 @@ void UpdatePlayerAnimation(Player* player)
 	player->timer += GetFrameTime();
 	if (player->timer >= player->frameTime)
 	{
-		player->currentFrame = (player->currentFrame + 1) % player->frameCount;
+		player->currentFrame = (player->currentFrame + 1) % ( player->isRunning ? player->rFrameCount : player->wFrameCount);
 		player->timer = 0.0f;
 	}
 }
@@ -261,10 +277,27 @@ void DrawPlayer(Player* player)
 	{
 		return; // Skip rendering player in title screen and main menu
 	}
-	Rectangle sourceRec = { player->currentFrame * player->frameWidth, 0, (float)player->frameWidth * player->direction, (float)player->frameHeight };
-	Rectangle destRec = { player->position.x, player->position.y, (float)player->frameWidth, (float)player->frameHeight };
+	Rectangle wsourceRec = { player->currentFrame * player->frameWidth, 0, (float)player->frameWidth * player->direction, (float)player->wFrameHeight };
+	Rectangle wdestRec = { player->position.x, player->position.y, (float)player->frameWidth, (float)player->wFrameHeight };
+
+	Rectangle rsourceRec = { player->currentFrame * player->frameWidth, 0, (float)player->frameWidth * player->direction, (float)player->rFrameHeight };
+	Rectangle rdestRec = { player->position.x, player->position.y, (float)player->frameWidth, (float)player->rFrameHeight };
+
 	Vector2 origin = { 0, 0 };
-	DrawTexturePro(player->spriteSheet, sourceRec, destRec, origin, 0.0f, WHITE);
+	if(player->isRunning)
+	{
+		DrawTexturePro(player->runningSpriteSheet, rsourceRec, rdestRec, origin, 0.0f, WHITE);
+	}
+	else
+	{
+		DrawTexturePro(player->walkingSpriteSheet, wsourceRec, wdestRec, origin, 0.0f, WHITE);
+	}
+}
+
+void FreePlayer(Player* player)
+{
+	UnloadTexture(player->walkingSpriteSheet);
+	UnloadTexture(player->runningSpriteSheet);
 }
 // ---------------- Scene Management -------------------
 
@@ -374,7 +407,7 @@ void UnloadTitleScreen(void* ctx);
 
 Scene* CreateTitleScreenScene(TitleScreenContext* context, Scene* scene)
 {
-	context->frameCount = 0;
+	context->wFrameCount = 0;
 	context->logo = LoadTexture("logo.png");
 	context->bg = LoadTexture("background.png");
 	context->message = "> Press ENTER or any key to start <";
@@ -394,7 +427,7 @@ void UpdateTitleScreen(void* ctx)
 {
 	TitleScreenContext* context = (TitleScreenContext*)ctx;
 
-	context->frameCount++;
+	context->wFrameCount++;
 	if (IsKeyPressed(KEY_ENTER) || GetKeyPressed() != 0)
 	{
 		PopScene(globalSceneStack); // Remove the title screen
@@ -453,7 +486,7 @@ void UnloadMainMenu(void* ctx);
 
 Scene* CreateMainMenuScene(MainMenuContext* context, Scene* scene)
 {
-	context->frameCount = 0;
+	context->wFrameCount = 0;
 	context->logo = LoadTexture("logo.png");
 	context->bg = LoadTexture("background.png");
 	context->logoY = GetScreenHeight()/2.0f; // Start off-screen
@@ -544,7 +577,7 @@ void UnloadCastleScene(void* ctx);
 
 Scene* CreateCastleScene(CeliseCastleContext* context, Scene* scene)
 {
-	context->frameCount = 0;
+	context->wFrameCount = 0;
 	context->bg1 = LoadTexture("wall.png");
 	context->bg2 = LoadTexture("floor.png");
 	context->bg3 = LoadTexture("carpet_red.png");
@@ -654,7 +687,7 @@ void UnloadTopBar(void* ctx);
 
 Scene* CreateTopBar(TopBarContext* context, Scene* scene)
 {
-	context->frameCount = 0;
+	context->wFrameCount = 0;
 	context->bg = LoadTexture("hud.png");
 	context->portrait_frame = LoadTexture("portrait_frame.png");
 	context->portrait = LoadTexture("portrait.png");
