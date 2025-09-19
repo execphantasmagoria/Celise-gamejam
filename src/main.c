@@ -7,7 +7,7 @@
 #include <math.h>
 // -------------- Structure Definitions ----------------
 
-typedef struct Scene {
+typedef struct {
 	char* scene_name;
 
 	void (*Update) (void* ctx);
@@ -16,17 +16,26 @@ typedef struct Scene {
 	void* ctx;
 } Scene;
 
-typedef struct SceneStack {
+typedef struct {
 	Scene* scenes[MAX_SCENES];
 	int scene_count;
 	int top;
 } SceneStack;
 
-typedef struct BaseSceneContext {
+typedef struct {
 	int dummy;
 } BaseSceneContext;
 
-typedef struct TitleScreenContext {
+typedef struct {
+	int frameCount;
+	Texture2D** backgroundTextures;
+	Texture2D** foregroundTextures;
+	const char** strings;
+	Font** fonts;
+	bool isSceneRendered;
+} SceneContext;
+
+typedef struct {
 	int wFrameCount;
 	Texture2D logo;
 	Texture2D bg;
@@ -34,7 +43,7 @@ typedef struct TitleScreenContext {
 	Font scene_font;
 } TitleScreenContext;
 
-typedef struct MainMenuContext {
+typedef struct {
 	int wFrameCount;
 	bool logoSettled;
 	bool buttonSelected;
@@ -47,7 +56,7 @@ typedef struct MainMenuContext {
 
 } MainMenuContext;
 
-typedef struct CeliseCastleContext
+typedef struct
 {
 	int wFrameCount;
 	bool sceneRendered;
@@ -56,7 +65,7 @@ typedef struct CeliseCastleContext
 	Texture2D bg3;
 } CeliseCastleContext;
 
-typedef struct TopBarContext {
+typedef struct {
 	int wFrameCount;
 	Texture2D bg;
 	Texture2D portrait_frame;
@@ -78,7 +87,18 @@ typedef struct TopBarContext {
 
 } TopBarContext;
 
-typedef struct Player {
+typedef enum
+{
+	IDLE,
+	WALKING,
+	RUNNING,
+	JUMPING,
+	TALKING,
+	CROUCHING,
+	ATTACKING
+} EntityState;
+
+typedef struct {
 	Texture2D walkingSpriteSheet;
 	Texture2D runningSpriteSheet;
 	int frameWidth;
@@ -93,6 +113,45 @@ typedef struct Player {
 	int direction; // 1 for left, -1 for right
 	Vector2 position;
 } Player;
+
+typedef struct {
+	char*** item_list;
+	int max_item_count;
+	Entity* owner;
+} Inventory;
+
+typedef struct {
+	Texture2D spriteSheet;
+	int frameWidth;
+	int frameHeight;
+	int frameCount;
+	int currentFrame;
+	float frameTime;
+	float timer;
+} EntitySprite;
+
+typedef struct {
+	float x;
+	float y;
+	int direction;
+} EntityPos;
+
+typedef struct {
+	EntitySprite sprite;
+	EntityState state;
+	EntityPos pos;
+	char* name;
+	int id;
+} Entity;
+
+typedef struct {
+	Entity entity;
+} Character;
+
+typedef struct {
+	Character character;
+	Inventory inv;
+} Player_2;
 
 // ----- Global Declarations & Forward Declarations -----
 
