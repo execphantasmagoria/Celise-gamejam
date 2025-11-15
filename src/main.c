@@ -121,31 +121,39 @@ typedef struct {
 } Inventory;
 
 typedef struct {
+	int STRENGTH;
+	int CHARISMA;
+	int WISDOM;
+	int INTELLIGENCE;
+	int DEXTERITY;
+	int VITALITY;
+} Attributes;
+
+typedef struct {
 	Texture2D spriteSheet;
+	Vector2 position;
+	EntityState state;
+	int direction;
 	int frameWidth;
 	int frameHeight;
 	int frameCount;
 	int currentFrame;
 	float frameTime;
 	float timer;
-} EntitySprite;
+} AnimationState;
 
 typedef struct {
-	float x;
-	float y;
-	int direction;
-} EntityPos;
-
-typedef struct {
-	EntitySprite sprite;
-	EntityState state;
-	EntityPos pos;
-	char* name;
+	AnimationState anim;
 	int id;
+	char* entityName;
 } Entity;
 
 typedef struct {
-	Entity entity;
+	Entity entityInfo;
+	Texture2D characterPortrait;
+	char* charName;
+	int charHeight;
+	int charWeight;
 } Character;
 
 typedef struct {
